@@ -1,0 +1,205 @@
+---  # document start
+config:  # A key with the name 'config', containing configuration information for your script
+  abort:  # A map with the key 'abort', this contains a map with a list of keywords that will immediately stop the conversation flow
+    keywords:
+      - stop
+  skip: # A map with the key 'skip', this contains a map with a list of keywords that will skip optional inputs
+    keywords:
+      - skip
+
+# ^^^^ All your scripts should start with the block above
+# https://tg.enchain.it/ubirchit2?data=blub2
+
+0:  # Each conversation step has a unique key that is used to identify it. The first step MUST be an integer with the value 0
+  messages:  # This is a node of the type 'message'
+    - "Hi, i am Tatjana - what are you looking for?"
+  action:  # An action is required in order to move to the next step
+    next: 1  # In this case, it's a key-value pair pointing to the next step with the key 1
+
+1:
+  input:
+    message: "Please select:"
+    type: bubbles
+    fallback: "Please enter an option"
+    any_message:
+      messages:
+        - "That's not available, please try again."
+      action:
+        next: 0
+    options:
+      - option: "Give me a quick demo of your solution."
+        action:
+         next: 3
+      - option: "I want to learn more about your product"
+        messages:
+        - "Sure, what about these options:"
+        action:
+         next: 6
+      - option: "I am a Dev, where is your GitHub?"
+        messages:
+        - "Sure, please have a look at this: https://ubirch.de/en/developer"
+        action:
+         next: 7
+      - option: "Connect me to a human operator, please."
+        messages:
+          - "I'll forward you to the next available operator"
+        action:
+         forward_any: true
+         next: 7
+
+3:
+  input:
+    message: "Ok, let's ubirch something. Normally we will do this with data from machines, but for demo a little piece of text also works: Please give me a quick statement that we shell put on the Blockchain:"
+    type: text
+    #format: "[0-9]{6}-[0-9]{2}"
+    key: statement
+    optional: false
+    when:
+      empty:  # How to handle an empty input
+        messages:
+          - "The statement cannot be empty!"
+          - "Please try again"
+        action:
+          next: 3  # Skip back to the beginning of this node, since we don't want to proceed until the required information is provided
+      valid:  # In case the input is valid (ie. not empty in this particular case) proceed to the next node
+        messages:
+          - "Thank you!"
+        action:
+         next: 4
+
+4:
+  input:
+    message: "alright, hold on..."
+    api:
+      request:
+        url: "https://tg.enchain.it/ubirchit_bot"  # The URL that should be called
+        method: "post"  # The method to use
+        data:  # Data is the request body of the POST request
+          values:  # Provide key-value pairs of data you want to send in the request body
+              data: "Engineer"
+              visits: 25
+          context:  
+          - statement
+      response:  # Define a variable the reponse is saved to
+        key: result2
+      when:
+        failure:  # Define what should happen when the request is not successful
+          messages:
+            - "Sorry, something went wrong"
+          action:
+            next: 0
+        success:
+          messages:
+            - "{{#result2}}Great, it worked! Your statement {{data}} has been ubirched.{{/result2}}"
+            - "{{#result2}}you can verify your anchored statement here: https://ubirch.de/verifier/simple-statement-verifier#ts={{ts2}}&data={{data2}}{{/result2}}"
+            - "If you want to play more and even anchor images to the Blockchain, please click here: https://ubirch.it"
+          action:
+           next: 5
+5:
+  input:
+    message: "What next - do it again or talk to one of my human colleagues?"
+    type: bubbles
+    fallback: "Please enter an option"
+    any_message:
+      messages:
+        - "That's not available, please try again."
+      action:
+       next: 0
+    options:
+      - option: "Do it again!"
+        action:
+         next: 3
+      - option: "More Infos, please!"
+        action:
+         next: 1
+      - option: "Connect me to a human operator, please."
+        messages:
+          - "I'll forward you to the next available operator"
+        action:
+         forward_any: true
+         next: 6
+
+6:
+  input:
+    message: "Please chose one option:"
+    type: bubbles
+    fallback: "Please enter an option"
+    any_message:
+      messages:
+        - "That's not available, please try again."
+      action:
+        next: 0
+    options:
+      - option: "I am a journalist."
+        messages:
+        - "Sure, here is our news-room:"
+        action:
+         navigate: "https://ubirch.de/en/newsroom"
+         fallback: "Click here {{link}}"
+         text: "Go to https://ubirch.de/en/newsroom"      
+         next: 7
+      - option: "Show me your Covid19 Solution"
+        messages:
+        - "Sure, this is a good starting point:"
+        action:
+         navigate: "https://ubirch.de/en/digital-corona-lab-certificate"
+         fallback: "Click here {{link}}"
+         text: "Go to https://ubirch.de/en/digital-corona-lab-certificate"      
+         next: 7
+      - option: "My interest is Insurance"
+        messages:
+        - "Sure, here is what we can offer:"
+        action:
+         navigate: "https://ubirch.de/en/applications/insurance-companies"
+         fallback: "Click here {{link}}"
+         text: "Go to https://ubirch.de/en/applications/insurance-companies"      
+         next: 7
+      - option: "My interest is Energy & Utilities"
+        messages:
+        - "Sure, this is a good starting point:"
+        action:
+         navigate: "https://ubirch.de/en/applications/energy-providers"
+         fallback: "Click here {{link}}"
+         text: "Go to https://ubirch.de/en/applications/energy-providers"      
+         next: 7
+      - option: "I want to understand how the technology works"
+        messages:
+        - "Yes, cool - go here, please:"
+        action:
+         navigate: "https://ubirch.de/en/technology"
+         fallback: "Click here {{link}}"
+         text: "Go to https://ubirch.de/en/technology"
+         next: 7
+      - option: "Connect me to a human operator, please."
+        messages:
+          - "I'll forward you to the next available operator"
+        action:
+         forward_any: true
+         next: 8
+
+7:
+  input:
+    message: "Next?"
+    type: bubbles
+    fallback: "Please enter an option"
+    any_message:
+      messages:
+        - "That's not available, please try again."
+      action:
+       next: 0
+    options:
+      - option: "More Info."
+        action:
+         next: 1
+      - option: "Human Operator."
+        messages:
+          - "I'll forward you to the next available operator"
+        action:
+         forward_any: true
+         next: 6
+
+8:
+  messages:
+    - "That's all for now!"
+  action:
+    end: true  # Call the 'end' action when your conversation flow has reached the end to signal that the conversation should not go on
